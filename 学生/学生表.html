@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>学生表</title>
+    <script src="vue2.6.10.js"></script>
+    <script src="vue-router.js"></script>
+    <script src="axios.js"></script>
+
+    <style1>
+
+
+    </style1>
+</head>
+<body>
+
+<div id="app">
+
+    <router-view></router-view>
+
+
+</div>
+
+<template id="list">
+    <div>
+        <div>
+            <button @click="add">新增</button>
+        </div>
+        <table width="1000" border="1">
+            <tr>
+                <td>Id</td>
+                <td>姓名</td>
+                <td>年龄</td>
+                <td>性别</td>
+                <td>学号</td>
+                <td>操作</td>
+            </tr>
+            <tr v-for="item in students" :key="item.id">
+                <td>{{item.id}}</td>
+                <td>{{item.name}}</td>
+                <td>{{item.age}}</td>
+                <td>{{item.sex}}</td>
+                <td>{{item.number}}</td>
+                <td>
+                    <button @click="del(item.id)">删除</button>
+                    <button @click="update(item.id,item.number)">修改</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</template>
+
+<template id="add">
+    <div>
+        <input type="text" v-model="name" placeholder="姓名">
+        <input type="text" v-model="age" placeholder="年龄">
+        <input type="text" v-model="sex" placeholder="性别">
+        <input type="text" v-model="number" placeholder="学号">
+        <button @click="add">添加学生</button>
+    </div>
+</template>
+
+<template id="update">
+    <div>
+        <input type="text" v-model="id" disabled>
+        <input type="text" v-model="number" placeholder="输入新学号">
+        <button @click="update">更改学号</button>
+    </div>
+</template>
+
+
+<script>
+
+    var list = Vue.extend({
+        template: '#list',
+        data() {
+            return {
+                students: []
+            }
+        },
+        methods: {
+            add() {
+                this.$router.push({name: 'addStudent'});
+            },
+            del(id) {
+                var _this = this;
+                axios.get('http://120.79.234.76:8091/student/student_delete.php', {params: {id}}).then(function (res) {
+                    if (res.status == 200) {
+                        for (var i = 0; i < _this.students.length; i++) {
+                            if (_this.students[i].id == id) {
+                                _this.students.splice(i, 1);
+                            }
+                        }
+                        alert(res.data.msg);
+                    } else {
+                        alert(res.data.msg);
+                    }
+
+                });
+            },
+            //获取id,学号
+            update(id, number) {
+                this.$router.push({
+                    name: 'update', params: {
+                        id: id,
+                        number: number
+                    }
+                })
+            }
+        },
+
+
+        created() {
+            var _this = this;
+            axios.get('http://120.79.234.76:8091/student/student_select.php').then(function (res) {
+                _this.students = res.data;
+            })
+        }
+
+
+    });
+
+
+    var add = Vue.extend({
+        template: '#add',
+        data() {
+            return {
+                name: '',
+                age: '',
+                sex: '',
+                number: ''
+            }
+        },
+        methods: {
+            add() {
+                if (this.name == "" || this.age == "" || this.sex == "" || this.number == "") {
+                    alert("所有信息均需填写");
+                    return;//结束add函数运行
+                }
+                var _this = this;
+                axios.get('http://120.79.234.76:8091/student/student_add.php', {
+                    params: {
+                        student_name: _this.name,
+                        student_age: _this.age,
+                        student_sex: _this.sex,
+                        student_number: _this.number
+                    }
+                }).then(function (res) {
+                    if (res.status == 200) {
+                        alert(res.data.msg);
+                        _this.name = _this.age = _this.sex = _this.number = '';
+                        _this.$router.push('/');
+                    } else {
+                        alert(res.data.msg);
+                    }
+                })
+            }
+        }
+    });
+
+
+    var update = Vue.extend({
+        template: '#update',
+        data() {
+            return {
+                id: 0,
+                number: ''
+            }
+        },
+        created() {
+            this.id = this.$route.params.id;
+            this.number = this.$route.params.number;
+        },
+        methods: {
+            update() {
+                var _this=this;
+                axios.get('http://120.79.234.76:8091/student/student_update.php', {
+                    params: {id:_this.id,number:_this.number}
+                }).then(function (res) {
+                    alert(res.data.msg);
+                    _this.id=0;
+                    _this.number='';
+                    _this.$router.push('/');
+                });
+            },
+        }
+    });
+
+
+    var router = new VueRouter({
+        routes: [
+            {path: "/", component: list},
+            {path: '/list', component: list, name: "students"},
+            {path: '/add', component: add, name: "addStudent"},
+            {path: '/update', component: update, name: "update"}
+        ]
+    });
+
+    var vm = new Vue({
+        el: '#app',
+        router
+    })
+
+
+</script>
+
+</body>
+</html>
